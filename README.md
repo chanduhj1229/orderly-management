@@ -1,69 +1,92 @@
-# Welcome to your Lovable project
 
-## Project info
+# Order Management System
 
-**URL**: https://lovable.dev/projects/966bec97-ed5f-4b6c-bec5-2701cb1de99e
+A full-stack application for managing products with logging functionality.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Add, edit, and delete products
+- View product listing with search and filter capabilities
+- Activity logging for all product operations
+- User authentication
+- Responsive design for all screen sizes
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/966bec97-ed5f-4b6c-bec5-2701cb1de99e) and start prompting.
+### Frontend
+- React.js
+- Tailwind CSS
+- Shadcn UI
+- React Router
+- React Query
+- Framer Motion
 
-Changes made via Lovable will be committed automatically to this repo.
+### Backend
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
 
-**Use your preferred IDE**
+## Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js (v14 or newer)
+- MongoDB (local instance or MongoDB Atlas)
 
-Follow these steps:
+### Installation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Clone the repository
+```
+git clone <repository-url>
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Install frontend dependencies
+```
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Install backend dependencies
+```
+cd server
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Create a `.env` file in the server directory with the following variables:
+```
+NODE_ENV=development
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/ordermanagement
+```
+
+### Running the Application
+
+1. Start the backend server
+```
+cd server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+2. Start the frontend development server
+```
+npm run dev
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Open your browser and navigate to `http://localhost:3000`
 
-**Use GitHub Codespaces**
+## API Documentation
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Product Endpoints
 
-## What technologies are used for this project?
+- `GET /api/products` - Get all products
+- `POST /api/products` - Create a new product
+- `PUT /api/products/:id` - Update product by ID
+- `DELETE /api/products/:id` - Delete product by ID
 
-This project is built with .
+### Log Endpoints
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `GET /api/logs` - Get all activity logs
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/966bec97-ed5f-4b6c-bec5-2701cb1de99e) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+This project is licensed under the MIT License - see the LICENSE file for details.

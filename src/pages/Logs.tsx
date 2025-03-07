@@ -1,84 +1,65 @@
 
-import { useMemo, useState } from "react";
-import { format } from "date-fns";
-import { ClipboardList, Search, Filter } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState, useMemo } from "react";
+import { useProducts } from "@/contexts/ProductContext";
+import { format, parseISO } from "date-fns";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useProducts, Log } from "@/contexts/ProductContext";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchIcon, InfoIcon } from "lucide-react";
 
 const Logs = () => {
   const { logs, isLoading } = useProducts();
   const [searchQuery, setSearchQuery] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Filter logs based on search and action type
+  // Filter logs based on search query and action type
   const filteredLogs = useMemo(() => {
-    return logs
-      .filter((log) => {
-        const matchesSearch = log.productName
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
-        const matchesAction =
-          actionFilter === "all" || log.actionType === actionFilter;
-        return matchesSearch && matchesAction;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.timestamp).getTime();
-        const dateB = new Date(b.timestamp).getTime();
-        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
-      });
-  }, [logs, searchQuery, actionFilter, sortOrder]);
+    return logs.filter((log) => {
+      const matchesSearch = log.productName
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesAction =
+        actionFilter === "all" || log.actionType === actionFilter;
+      return matchesSearch && matchesAction;
+    });
+  }, [logs, searchQuery, actionFilter]);
 
-  // Get action type badge color
-  const getActionColor = (actionType: string) => {
-    switch (actionType) {
-      case "Added":
-        return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
-      case "Updated":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
-      case "Deleted":
-        return "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100";
+  // Format timestamp
+  const formatDate = (dateString: string) => {
+    try {
+      return format(parseISO(dateString), "MMM dd, yyyy h:mm a");
+    } catch (error) {
+      return dateString;
     }
   };
 
-  // Format timestamp to readable date
-  const formatDate = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return format(date, "MMM d, yyyy 'at' h:mm a");
+  // Get action color
+  const getActionColor = (actionType: string) => {
+    switch (actionType) {
+      case "Added":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      case "Updated":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      case "Deleted":
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400";
+    }
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Activity Logs</h1>
-          <p className="text-muted-foreground">
-            Track all product-related activities
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Activity Logs</h1>
+        <p className="text-muted-foreground">
+          Track all product-related activities
+        </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by product name..."
             className="pl-9"
@@ -87,109 +68,76 @@ const Logs = () => {
           />
         </div>
 
-        <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Action Type</h4>
-                  <Select
-                    value={actionFilter}
-                    onValueChange={setActionFilter}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Filter by action" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Actions</SelectItem>
-                      <SelectItem value="Added">Added</SelectItem>
-                      <SelectItem value="Updated">Updated</SelectItem>
-                      <SelectItem value="Deleted">Deleted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Select
+          value={actionFilter}
+          onValueChange={setActionFilter}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Action Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Actions</SelectItem>
+            <SelectItem value="Added">Added</SelectItem>
+            <SelectItem value="Updated">Updated</SelectItem>
+            <SelectItem value="Deleted">Deleted</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Sort Order</h4>
-                  <Select
-                    value={sortOrder}
-                    onValueChange={(value) => setSortOrder(value as "asc" | "desc")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="desc">Newest First</SelectItem>
-                      <SelectItem value="asc">Oldest First</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+      {isLoading ? (
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center space-x-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
               </div>
-            </PopoverContent>
-          </Popover>
+            </div>
+          ))}
         </div>
-      </div>
-
-      <div className="flex-1 overflow-hidden">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex">
-                <div className="mr-4 flex-shrink-0">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                </div>
-                <div className="flex-1">
-                  <Skeleton className="h-5 w-1/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2 mb-1" />
-                  <Skeleton className="h-4 w-1/3" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filteredLogs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <ClipboardList className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-            <h3 className="text-lg font-medium mb-2">No activity logs found</h3>
-            <p className="text-muted-foreground text-center max-w-md">
-              {searchQuery || actionFilter !== "all"
-                ? "Try adjusting your search or filter"
-                : "Activity logs will appear here once products are added, updated, or deleted"}
-            </p>
-          </div>
-        ) : (
-          <div className="relative pl-6 border-l-2 border-muted space-y-8 pb-6">
-            {filteredLogs.map((log, index) => (
-              <motion.div
-                key={log.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="relative"
-              >
-                <div className="absolute -left-[25px] h-4 w-4 rounded-full bg-primary" />
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="text-sm font-medium">{log.productName}</span>
-                  <Badge
-                    variant="outline"
-                    className={`${getActionColor(log.actionType)}`}
-                  >
-                    {log.actionType}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {formatDate(log.timestamp)}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
+      ) : filteredLogs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <InfoIcon className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+          <h3 className="text-lg font-medium mb-1">No logs found</h3>
+          <p className="text-muted-foreground">
+            {searchQuery || actionFilter !== "all"
+              ? "Try adjusting your search or filter"
+              : "Activity logs will appear here once you perform actions on products"}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-background rounded-xl shadow">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Action</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>Product ID</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredLogs.map((log) => (
+                <TableRow key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionColor(
+                        log.actionType
+                      )}`}
+                    >
+                      {log.actionType}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-medium">{log.productName}</TableCell>
+                  <TableCell>{formatDate(log.timestamp)}</TableCell>
+                  <TableCell className="font-mono text-xs">{log.productId}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };

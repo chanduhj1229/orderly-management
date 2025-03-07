@@ -40,172 +40,224 @@ export const useProducts = () => {
   return context;
 };
 
-// Mock initial data
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Laptop Pro',
-    price: 1299.99,
-    stock: 10,
-    category: 'Electronics',
-    createdAt: new Date(Date.now() - 604800000).toISOString(), // 7 days ago
-    updatedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-  },
-  {
-    id: '2',
-    name: 'Wireless Headphones',
-    price: 199.99,
-    stock: 25,
-    category: 'Audio',
-    createdAt: new Date(Date.now() - 1209600000).toISOString(), // 14 days ago
-    updatedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-  },
-  {
-    id: '3',
-    name: 'Smart Watch',
-    price: 299.99,
-    stock: 15,
-    category: 'Wearables',
-    createdAt: new Date(Date.now() - 2592000000).toISOString(), // 30 days ago
-    updatedAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-  },
-];
-
-const mockLogs: Log[] = [
-  {
-    id: '1',
-    actionType: 'Added',
-    productId: '1',
-    productName: 'Laptop Pro',
-    timestamp: new Date(Date.now() - 604800000).toISOString(), // 7 days ago
-  },
-  {
-    id: '2',
-    actionType: 'Added',
-    productId: '2',
-    productName: 'Wireless Headphones',
-    timestamp: new Date(Date.now() - 1209600000).toISOString(), // 14 days ago
-  },
-  {
-    id: '3',
-    actionType: 'Updated',
-    productId: '1',
-    productName: 'Laptop Pro',
-    timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-  },
-];
+// API URL
+const API_URL = 'http://localhost:5000/api';
 
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load mock data on mount
+  // Load products and logs on mount
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setProducts(mockProducts);
-      setLogs(mockLogs);
-      setIsLoading(false);
-    }, 1000);
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch products
+        const productsRes = await fetch(`${API_URL}/products`);
+        const productsData = await productsRes.json();
+        
+        if (productsData.success) {
+          // Transform the data to match our frontend model
+          const transformedProducts = productsData.data.map((product: any) => ({
+            id: product._id,
+            name: product.name,
+            price: product.price,
+            stock: product.stock,
+            category: product.category,
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt
+          }));
+          
+          setProducts(transformedProducts);
+        }
+        
+        // Fetch logs
+        const logsRes = await fetch(`${API_URL}/logs`);
+        const logsData = await logsRes.json();
+        
+        if (logsData.success) {
+          // Transform the data to match our frontend model
+          const transformedLogs = logsData.data.map((log: any) => ({
+            id: log._id,
+            actionType: log.actionType,
+            productId: log.productId,
+            productName: log.productName,
+            timestamp: log.timestamp
+          }));
+          
+          setLogs(transformedLogs);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to fetch data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
   const addProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
     setIsLoading(true);
     
-    // Simulate API call
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const now = new Date().toISOString();
-        const newProduct: Product = {
-          id: Date.now().toString(),
-          ...productData,
-          createdAt: now,
-          updatedAt: now,
-        };
+    try {
+      const response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add product');
+      }
+      
+      const newProduct: Product = {
+        id: data.data._id,
+        name: data.data.name,
+        price: data.data.price,
+        stock: data.data.stock,
+        category: data.data.category,
+        createdAt: data.data.createdAt,
+        updatedAt: data.data.updatedAt,
+      };
+      
+      setProducts((prev) => [...prev, newProduct]);
+      
+      // Refresh logs to get the new log entry
+      const logsRes = await fetch(`${API_URL}/logs`);
+      const logsData = await logsRes.json();
+      
+      if (logsData.success) {
+        const transformedLogs = logsData.data.map((log: any) => ({
+          id: log._id,
+          actionType: log.actionType,
+          productId: log.productId,
+          productName: log.productName,
+          timestamp: log.timestamp
+        }));
         
-        setProducts((prev) => [...prev, newProduct]);
-        
-        const newLog: Log = {
-          id: Date.now().toString(),
-          actionType: 'Added',
-          productId: newProduct.id,
-          productName: newProduct.name,
-          timestamp: now,
-        };
-        
-        setLogs((prev) => [...prev, newLog]);
-        toast.success(`Product "${newProduct.name}" added successfully`);
-        setIsLoading(false);
-        resolve();
-      }, 1000);
-    });
+        setLogs(transformedLogs);
+      }
+      
+      toast.success(`Product "${newProduct.name}" added successfully`);
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast.error('Failed to add product');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateProduct = async (id: string, productData: Partial<Product>) => {
     setIsLoading(true);
     
-    // Simulate API call
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const now = new Date().toISOString();
+    try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update product');
+      }
+      
+      const updatedProduct: Product = {
+        id: data.data._id,
+        name: data.data.name,
+        price: data.data.price,
+        stock: data.data.stock,
+        category: data.data.category,
+        createdAt: data.data.createdAt,
+        updatedAt: data.data.updatedAt,
+      };
+      
+      setProducts((prev) => 
+        prev.map((product) => 
+          product.id === id ? updatedProduct : product
+        )
+      );
+      
+      // Refresh logs to get the new log entry
+      const logsRes = await fetch(`${API_URL}/logs`);
+      const logsData = await logsRes.json();
+      
+      if (logsData.success) {
+        const transformedLogs = logsData.data.map((log: any) => ({
+          id: log._id,
+          actionType: log.actionType,
+          productId: log.productId,
+          productName: log.productName,
+          timestamp: log.timestamp
+        }));
         
-        setProducts((prev) => 
-          prev.map((product) => 
-            product.id === id 
-              ? { ...product, ...productData, updatedAt: now } 
-              : product
-          )
-        );
-        
-        const updatedProduct = products.find((product) => product.id === id);
-        
-        if (updatedProduct) {
-          const newLog: Log = {
-            id: Date.now().toString(),
-            actionType: 'Updated',
-            productId: id,
-            productName: productData.name || updatedProduct.name,
-            timestamp: now,
-          };
-          
-          setLogs((prev) => [...prev, newLog]);
-          toast.success(`Product "${productData.name || updatedProduct.name}" updated successfully`);
-        }
-        
-        setIsLoading(false);
-        resolve();
-      }, 1000);
-    });
+        setLogs(transformedLogs);
+      }
+      
+      toast.success(`Product "${updatedProduct.name}" updated successfully`);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error('Failed to update product');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const deleteProduct = async (id: string) => {
     setIsLoading(true);
     
-    // Simulate API call
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const productToDelete = products.find((product) => product.id === id);
+    try {
+      const productToDelete = products.find((product) => product.id === id);
+      
+      if (!productToDelete) {
+        throw new Error('Product not found');
+      }
+      
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE',
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete product');
+      }
+      
+      setProducts((prev) => prev.filter((product) => product.id !== id));
+      
+      // Refresh logs to get the new log entry
+      const logsRes = await fetch(`${API_URL}/logs`);
+      const logsData = await logsRes.json();
+      
+      if (logsData.success) {
+        const transformedLogs = logsData.data.map((log: any) => ({
+          id: log._id,
+          actionType: log.actionType,
+          productId: log.productId,
+          productName: log.productName,
+          timestamp: log.timestamp
+        }));
         
-        if (productToDelete) {
-          setProducts((prev) => prev.filter((product) => product.id !== id));
-          
-          const newLog: Log = {
-            id: Date.now().toString(),
-            actionType: 'Deleted',
-            productId: id,
-            productName: productToDelete.name,
-            timestamp: new Date().toISOString(),
-          };
-          
-          setLogs((prev) => [...prev, newLog]);
-          toast.success(`Product "${productToDelete.name}" deleted successfully`);
-        }
-        
-        setIsLoading(false);
-        resolve();
-      }, 1000);
-    });
+        setLogs(transformedLogs);
+      }
+      
+      toast.success(`Product "${productToDelete.name}" deleted successfully`);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Failed to delete product');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getProductById = (id: string) => {
